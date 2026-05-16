@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Reading">
+<title>Reading Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-tertiary: rgba(0,0,0,0.12);
+    --color-border-secondary: rgba(0,0,0,0.22);
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1e;
+      --color-background-secondary: #2c2c2e;
+      --color-text-primary: #f2f2f7;
+      --color-text-secondary: #aeaeb2;
+      --color-text-tertiary: #636366;
+      --color-border-tertiary: rgba(255,255,255,0.1);
+      --color-border-secondary: rgba(255,255,255,0.2);
+    }
+  }
+
+  body {
+    background: var(--color-background-secondary);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    padding: 1rem;
+  }
+
+  .tracker-wrap { max-width: 340px; margin: 1.5rem auto; }
+  .book-icon { text-align: center; margin-bottom: 0.5rem; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; margin-bottom: 12px; }
+  .label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .big-num { font-size: 36px; font-weight: 500; color: var(--color-text-primary); line-height: 1; }
+  .unit { font-size: 14px; color: var(--color-text-secondary); margin-left: 4px; }
+  .goal-note { font-size: 12px; color: var(--color-text-tertiary); margin-top: 4px; }
+
+  .progress-bar-bg { background: var(--color-background-secondary); border-radius: 99px; height: 8px; margin: 1rem 0 0.5rem; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 99px; background: #1D9E75; transition: width 0.2s ease; }
+
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 0.75rem; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 4px; background: var(--color-background-secondary);
+    border-radius: 99px; outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px;
+    border-radius: 50%; background: #1D9E75; cursor: pointer;
+    border: 2px solid #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .slider-val { font-size: 14px; font-weight: 500; min-width: 32px; text-align: right; color: var(--color-text-primary); }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.85rem 1rem; }
+  .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .stat-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+  .goal-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 99px; margin-top: 0.75rem; }
+  .badge-done { background: #E1F5EE; color: #0F6E56; }
+  .badge-pending { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+
+  .history-title { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 8px; }
+  .history-dots { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--color-text-secondary); background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); flex-direction: column; }
+  .dot.done { background: #E1F5EE; border-color: #5DCAA5; color: #0F6E56; }
+  .dot.today { border: 2px solid #1D9E75; }
+  .date-label { font-size: 9px; color: var(--color-text-tertiary); margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<div class="tracker-wrap">
+  <div class="book-icon">
+    <i class="ti ti-book-2" style="font-size:36px; color:#1D9E75;"></i>
+  </div>
+
+  <div class="card">
+    <div class="label">Today's reading</div>
+    <div style="display:flex;align-items:baseline;">
+      <span class="big-num" id="mins-display">0</span>
+      <span class="unit">min</span>
+    </div>
+    <div class="goal-note">Goal: 30 min</div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="prog-bar" style="width:0%;"></div>
+    </div>
+    <div class="slider-row">
+      <i class="ti ti-book" style="font-size:16px;color:var(--color-text-tertiary);"></i>
+      <input type="range" min="0" max="30" value="0" step="1" id="reading-slider" aria-label="Minutes read today">
+      <span class="slider-val" id="slider-val">0</span>
+    </div>
+    <div id="goal-badge" class="goal-badge badge-pending">
+      <i class="ti ti-circle" style="font-size:14px;"></i>
+      <span id="badge-text">0 / 30 min</span>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label"><i class="ti ti-flame" style="font-size:13px;margin-right:3px;"></i>Current streak</div>
+      <div class="stat-val" id="streak-val">0</div>
+      <div class="stat-sub" id="streak-sub">days in a row</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="ti ti-trophy" style="font-size:13px;margin-right:3px;"></i>Best streak</div>
+      <div class="stat-val" id="best-val">0</div>
+      <div class="stat-sub">personal best</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <div class="history-title">Last 7 days</div>
+    <div class="history-dots" id="history-dots"></div>
+  </div>
+</div>
+
+<script>
+const GOAL = 30;
+const STORAGE_KEY = 'reading_tracker_v1';
+
+function todayKey() {
+  return new Date().toISOString().slice(0,10);
+}
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+function saveData(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e) {}
+}
+function calcStreak(data) {
+  let streak = 0, check = new Date();
+  if ((data[todayKey()] || 0) < GOAL) check.setDate(check.getDate() - 1);
+  while (true) {
+    const key = check.toISOString().slice(0,10);
+    if ((data[key] || 0) >= GOAL) { streak++; check.setDate(check.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
+function calcBest(data) {
+  const keys = Object.keys(data).sort();
+  let best = 0, cur = 0;
+  for (const k of keys) { data[k] >= GOAL ? (cur++, best = Math.max(best, cur)) : (cur = 0); }
+  return best;
+}
+function getLast7() {
+  return Array.from({length:7}, (_,i) => { const d = new Date(); d.setDate(d.getDate()-(6-i)); return d.toISOString().slice(0,10); });
+}
+function render() {
+  const data = loadData(), today = todayKey(), mins = data[today] || 0;
+  document.getElementById('reading-slider').value = mins;
+  document.getElementById('mins-display').textContent = mins;
+  document.getElementById('slider-val').textContent = mins;
+  document.getElementById('prog-bar').style.width = Math.min(100, Math.round(mins/GOAL*100)) + '%';
+  const badge = document.getElementById('goal-badge');
+  const icon = badge.querySelector('i');
+  const txt = document.getElementById('badge-text');
+  if (mins >= GOAL) { badge.className='goal-badge badge-done'; icon.className='ti ti-circle-check'; txt.textContent='Goal reached!'; }
+  else { badge.className='goal-badge badge-pending'; icon.className='ti ti-circle'; txt.textContent=mins+' / 30 min'; }
+  const streak = calcStreak(data), best = Math.max(calcBest(data), streak);
+  document.getElementById('streak-val').textContent = streak;
+  document.getElementById('best-val').textContent = best;
+  document.getElementById('streak-sub').textContent = streak === 1 ? 'day in a row' : 'days in a row';
+  const dotsEl = document.getElementById('history-dots');
+  dotsEl.innerHTML = '';
+  getLast7().forEach(key => {
+    const day = ['S','M','T','W','T','F','S'][new Date(key).getDay()];
+    const done = (data[key]||0) >= GOAL, isToday = key === today;
+    const dot = document.createElement('div');
+    dot.className = 'dot'+(done?' done':'')+(isToday?' today':'');
+    dot.title = key+': '+(data[key]||0)+' min';
+    dot.innerHTML = '<span>'+(done?'<i class="ti ti-check" style="font-size:11px;"></i>':day)+'</span><span class="date-label">'+day+'</span>';
+    dotsEl.appendChild(dot);
+  });
+}
+document.getElementById('reading-slider').addEventListener('input', function() {
+  const data = loadData(); data[todayKey()] = parseInt(this.value); saveData(data); render();
+});
+render();
+</script>
+</body>
+</html>
